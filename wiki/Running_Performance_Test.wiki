@@ -1,0 +1,43 @@
+= Running Zoie performance test =
+
+== Configuration ==
+  # edit perf/settings/index.properties file to point to directory containing test data (*must do*) 
+  # edit perf/conf/perf.properties file
+    * zoie.perf.waitTimeMillis - amount of time to wait between searches for each thread (default is 500ms)
+    * zoie.perf.numDocs - index up to this many documents before repeating as updates (default is 1000000)
+  # edit /test-perf/config/zoie-perf-test.properties
+    * org.deepak.performance.runtimeinminute - amount of time of the test run in minutes, negative number indicates non-stop (default is 30 minutes)
+
+== Starting Server ==
+  # The following steps need to be repeated if any configuration has been changed.
+  # ant clean (This does not clean the index fold (./index), which may need to be cleaned for comparison.)
+  # ant perf-war
+  # ant perf-test
+  # ant run-server (wait till "INFO:  Started " is printed)
+  # Use jconsole to start data-provider in Tree:zoie-perf:data-provider:Operations:start. After the size of the index reach certain size, the data-provider can be manually stopped using JMX.
+
+== Running Test Client ==
+  # Go to dist/performance-test/conf
+  # Edit zoie-perf-test.properties (currently default already)
+    * org.deepak.performance.usefakemethodarguments=true
+    * org.deepak.performance.numoffakemethodargs=1
+    * org.deepak.performance.monitorserverhealth=false
+  # Go to dist/performance-test
+  # chmod u+x bin/zoie-perf-test_ctl.sh
+  # Run bin/zoie-perf-test_ctl.sh
+  # The pdf report is in dist/results/zoie/pdf
+
+== Real-time Monitoring of Query Throughput in JMX ==
+  # Use jconsole to connect to port 9999
+  # View in Tree:zoie-perf:data-provider:Attributes:!EventCount The value is the number of individual indexing requests since the server is started. !EventsPerMinute is the overall average number of individual indexing requests per minute since the server is started.
+
+== Real-time Monitoring of Indexing Throughput in JMX ==
+  # Use jconsole to connect to port 9999
+  # Tree:zoie-perf:zoie-service:Operations:beginTiming button to start the clocking (do it again to restart clocking). Currently, it is monitoring the average throughput from the time beginTiming is clicked.
+  # View in Tree:zoie-perf:zoie-service:Attributes:!QueriesPerMinute (need to refresh to get new value) The value is the number of queries per minute from the last time beginTiming is pressed till now. The value is 0 if the beginTiming button was never pressed.
+
+== jconsole tip ==
+  # jconsole can automatically graph the attributes values with respect to time. To do this, double click the attributes value.
+
+== Throttling Indexing Request ==
+In our performance test, the indexing data provider is sending as many indexing request as it can. This results in extremely high indexing rate, which is not realistic and no system can handle over time period of time. We now have a JMX facility to throttle the indexing rate. To access this facility, use jconsole to connect to zoie. In the JMX Tree:zoie-perf:data-provider:Attributes:MaxEventsPerMinute . This property is read/write access. The default is maxLong. When data-provider is not started, the value is 0. Set this property to the desired value *after* the data-provider is started.

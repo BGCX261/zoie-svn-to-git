@@ -1,0 +1,44 @@
+#labels Featured
+= Introduction =
+
+We are currently in the process of upgrading Zoie from Lucene 2.4 library to Lucene 2.9 library. During this process, we need to keep track of the performance impact of the library change so that we can tune the implementation accordingly so that new Zoie will provide optimal performance using the new library. Additionally, Lucene 2.9 comes with near realtime indexing capability. We compare the performance of LuceneNRT with Zoie so that users may make appropriate choices according to their performance requirements.
+
+Data set: medline medical journals, small-ish sized text documents. (can be obtained [http://test.project-voldemort.com/zoie/data/ here])
+
+test run duration: 30 minutes
+
+start index size: 0 (insert only)
+
+Branch Name: *BR_LUCENE_2.9_3*
+
+== Test Setup ==
+
+  * Point to the data source: edit perf/settings/index.properties and point *source.directory* to where you have extracted your data. (make sure *data.type* is set to file, *wiki.file* parameter can be ignored)
+  * Running Zoie vs. NRT: edit perf/conf/perf.properties and set *zoie.indexer.type* to either *zoie* or *nrt*
+  * Indexer will loop around at *zoie.perf.numDocs* and do updates, which is defaulted to 1M
+
+== System ==
+<img src="http://xiaoyanggu.googlepages.com/Picture21.png">
+
+== Test ==
+
+See [Running_Performance_Test Running_Performance_Test] for general information about the performance test setup. In this test, we start the query test (Running Test Client) *as soon as* we start the data provider thread.
+
+We use jconsole to monitor the exported JMX properties and graph them. (
+See [Running_Performance_Test Running_Performance_Test] for more information.) A screen-shot is taken when the query test finishes running at 30 minutes mark.
+
+= Indexing Throughput When Querying Test Is Running=
+  == Zoie/Lucene 2.4 ==
+<img src="http://xiaoyanggu.googlepages.com/Picture11.png">
+  == Zoie/Lucene 2.9 ==
+<img src="http://xiaoyanggu.googlepages.com/Picture15.png">
+  == Lucene 2.9/NRT ==
+<img src="http://xiaoyanggu.googlepages.com/Picture28.png">
+
+= Query Throughput When Indexing Is Running =
+  == Zoie/Lucene 2.4 ==
+<img src="http://xiaoyanggu.googlepages.com/Picture12.png">
+  == Zoie/Lucene 2.9 ==
+<img src="http://xiaoyanggu.googlepages.com/Picture16.png">
+  == Lucene 2.9/NRT ==
+<img src="http://xiaoyanggu.googlepages.com/Picture29.png">

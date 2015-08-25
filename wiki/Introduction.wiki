@@ -1,0 +1,95 @@
+#labels Featured,Phase-Design
+=What is Zoie?=
+
+Zoie is a real-time indexing and search system built on [http://apache.lucene.org Lucene].
+
+Zoie is designed to be simple and extensible.
+
+=Components=
+
+Zoie is a set of components that can be wired together using [http://www.springframework.org/ Spring] (or another dependency injection framework, or by hand).
+
+Each of the components can be managed via JMX.
+
+==Basic Components==
+
+The following are the primary interfaces:
+
+  * !DataProvider
+  * !DataConsumer
+  * !IndexReaderFactory
+
+===!DataProvider and !DataConsumer===
+
+Specified by  {{{ proj.zoie.api.DataProvider }}} and {{{proj.zoie.api.DataConsumer}}} interfaces, respectively.
+
+The job of the !DataProvider is to manage source data to be indexed. Source data maybe xml files, result set from a jdbc call, requests into an indexing server etc.
+
+Each unit of the source data is attached with a version number to allow flexibility to reprocess data. Version number can be timestamps, database commit numbers etc.
+
+A !DataConsumer can be registered to a !DataProvider to consume data.
+
+===!IndexReaderFactory===
+
+Specified by the {{{ proj.zoie.api.IndexReaderFactory }}}, is simply a (caching, when necessary) factory for managing Lucene !IndexReaders life cycles.
+
+===Code Sample===
+
+{{{
+
+   // indexing, e.g. consume indexing events
+
+   DataConsumer myDataConsumer = ...
+
+   myDataConsumer.consume(events);
+
+  // searching, grab index readers and search
+  IndexReaderFactory readerFactory = ...
+
+  List<IndexReader> indexReaders =    null;
+
+  try{
+     indexReaders  = readerFactory.getIndexReaders();
+
+     // combine all index readers
+
+     IndexReader multiReader=new MultiReader(indexReaders.toArray(new IndexReader[indexReaders.size()]),false);
+
+     IndexSearcher searcher = new IndexSearcher();
+
+    // do searches
+
+     searcher.close();
+  }
+  finally{
+     if (readerFactory!=null){
+         readerFactory.returnIndexReaders(indexReaders);
+     }
+  }
+
+}}}  
+
+==Component Implementations==
+
+The following are the implementations for the above basic components:
+
+  * !StreamDataProvider  ({{{implements DataProvider}}})
+   * !FileDataProvider
+   * !MemoryStreamDataProvider
+  * !ZoieSystem  ({{{implements IndexReaderFactory, DataConsumer}}})
+
+===!StreamDataProvider and !FileDataProvider===
+
+!StreamDataProvider  is an implementation of the !DataProvider component to manage data as a stream.
+
+!FileDataProvider is a !StreamDataProvider the processes a directory of files.
+
+===ZoieSystem===
+
+ZoieSystem is a !DataConsumer that consumes data and builds a Lucene index.
+
+ZoieSystem is also a !IndexReaderFactory that provides Lucene !IndexReaders to allow for the Lucene index to be searched.
+
+Since ZoieSystem is both a !DataConsumer and an !IndexReaderFactory, ZoieSystem manages the life cycles of indexing and index reader construction, and provides real-time capability for search and indexing.
+
+ZoieSystem is the soul of this project and deserves its own [ZoieSystem wiki]

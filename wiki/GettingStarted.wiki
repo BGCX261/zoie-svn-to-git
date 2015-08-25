@@ -1,0 +1,79 @@
+#labels Featured,Phase-Deploy
+=Getting Started=
+
+==Prerequisites==
+
+  * Java 1.5+
+  * Ant
+
+==Bundled==
+
+  * jetty 6.1.14
+  * log4j 1.2.15
+  * lucene 2.4.0
+  * lucene Highlighter 2.3
+  * mx4j
+  * spring
+  * fastutil 5.1.5
+  * json
+  * servlet-api
+
+==Directory Structure==
+
+  * java - library source code
+  * lib - bundled libraries
+  * jetty - jetty and servlet libraries
+  * conf - configuration
+  * test - unit tests and test resources
+  * server
+  * server/src - server source code
+  * example/java - example source code
+  * example/settings - example configuration
+  * example/resource - example web.xml and dwr.xml
+  * example/conf - example spring configuration
+  * example/webapp - example web ui
+
+==Build==
+
+Just do *ant*
+
+_zoie-${version}.jar_ will be created in the *_dist_* directory
+
+==Configure the Example==
+
+Edit *_example/settings/index.properties_* to specify source directory location, by default, the java directory is specified.
+
+==Build Example War==
+
+do *ant example-war*
+_zoie-example.war_ will be created in the *_dist_* directory
+
+==Run==
+
+Do *ant run-server*
+
+_zoie-example.war_ will be deployed.
+
+Server is running on: [http://localhost:8888/zoie-example http://localhost:8888/zoie-example]
+
+Logs are in *_logs_* directory
+Target index is *_example-index_* directory
+
+[http://john.wang.googlepages.com/zoie-example.png]
+
+== Indexing ==
+Data stream is *_NOT_* started by default, to start the data stream for indexing via JMX:
+
+*_Bean_*: zoie-example:name=data-provider
+
+*_method_*: start()
+
+do: jconsole
+
+[http://john.wang.googlepages.com/jconsole.png]
+
+You should be able to search immediately:
+
+[http://john.wang.googlepages.com/zoie-example-search.png]
+
+Now customize *_example/settings/index.properties_* to set the source directory to your own and search it in real time! (restart/redeploy required)

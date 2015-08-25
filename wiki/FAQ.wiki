@@ -1,0 +1,10 @@
+#labels Featured
+= FAQ =
+
+*Q:* What's Zoie?
+
+*A:* Zoie is a real-time indexing and search system built on Lucene. Zoie is designed to be simple and extensible.
+
+*Q:* I am getting org.apache.lucene.store.!AlreadyClosedException. What is wrong?
+
+*A:* You are probably closing !IndexReaders in your code. Since !IndexReaders that Zoie opens are shared by multiple search requests you should not close them in your code. Instead, you should call !ZoieSystem (which implements !IndexReaderFactory)'s *returnIndexReaders* method.

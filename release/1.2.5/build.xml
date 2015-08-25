@@ -1,0 +1,146 @@
+<project name="zoie" default="dist">
+	<property name="zoie.root" location="."/>
+	<property name="src" value="java"/>
+	<property name="conf.dir" location="conf" />
+	<property name="jetty.home" location="jetty" />
+		
+	<property name="test" value="test"/>
+    <property name="lib" location="lib"/>
+    
+	<property name="build" value="build"/>
+	
+	<property name="logs" value="logs"/>
+	
+	<property name="dist" location="dist" />
+	<property name="version" value="1.2.5"/>
+	<property name="doc" value="doc"/>
+	<property name="build.test" value="build-test"/>
+	
+	<property name="project.name" value="zoie"/>
+	
+	<path id="compile.class.path">
+		<fileset dir="${lib}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+	
+	<path id="java.class.path">
+		<dirset dir="${build}">
+		        <include name="**"/>
+		</dirset>
+		
+	</path>
+	
+	<path id="test.class.path">
+			<dirset dir="${build.test}">
+			        <include name="**"/>
+			</dirset>
+		</path>
+	
+	<target name="clean">
+        <delete dir="${build}"/>
+        <delete dir="${dist}"/>
+		<delete dir="${logs}"/>
+		<delete dir="${build.test}"/>
+		<ant antfile="build.xml" dir="example" target="clean"/>
+		<ant antfile="build.xml" dir="server" target="clean"/>
+    </target>
+
+    <target name="init">
+        <mkdir dir="${build}"/>
+        <mkdir dir="${dist}"/>
+    	<mkdir dir="${build.test}"/>
+    </target>
+	
+	<target name="compile" depends="init">
+		<javac destdir="${build}">
+            <src path="${src}"/>
+            <classpath refid="compile.class.path"/>
+        </javac>
+	</target>
+	
+	<target name="dist" depends="compile">
+			<jar destfile="${dist}/${project.name}-${version}.jar"  basedir="${build}" />
+	</target>
+	
+	<path id="server.compile.class.path">
+			<fileset dir="${lib}">
+				<include name="*.jar" />
+			</fileset>
+			<fileset dir="${jetty.home}">
+				<include name="*.jar" />
+			</fileset>
+			<fileset dir="${dist}">
+				<include name="*.jar" />
+			</fileset>
+	</path>
+	
+	<target name="example-war" depends="dist">
+		<ant antfile="build.xml" dir="example" target="dist"/>
+	</target>
+	
+	<target name="build-server" depends="init">
+		<ant antfile="build.xml" dir="server" target="dist"/>
+	</target>
+	
+	<target name="run-server" depends="build-server">
+		<java fork="true" jar="${dist}/zoie-server.jar" failonerror="true" maxmemory="2g">
+					<sysproperty key="log.home" value="${logs}" />
+					<sysproperty key="conf.dir" value="${conf.dir}" />
+					<jvmarg value="-server" />
+					<jvmarg value="-DXms2g" />
+					<jvmarg value="-DXmx2g" />
+					<jvmarg value="-Dcom.sun.management.jmxremote" />
+					<jvmarg value="-Dcom.sun.management.jmxremote.port=9999" />
+					<jvmarg value="-Dcom.sun.management.jmxremote.authenticate=false" />
+					<jvmarg value="-Dcom.sun.management.jmxremote.ssl=false" />
+					<!-- uncomment to turn on yourkit profiling
+					<jvmarg value="-agentlib:yjpagent" />
+					-->
+		</java>
+	</target>
+	
+	<target name="javadoc" depends="init">
+
+        <delete dir="${doc}"/>
+		<javadoc packagenames="proj.zoie.api,
+							   proj.zoie.api.indexing,
+							   proj.zoie.imp.indexing"
+				           sourcepath="${src}"
+						   classpathref="compile.class.path"
+				           defaultexcludes="yes"
+				           destdir="${doc}"
+				           author="true"
+				           version="true"
+				           use="true"
+				           windowtitle="zoie">
+				    <doctitle><![CDATA[<h1>Zoie</h1>]]></doctitle>
+				    <link href="http://java.sun.com/j2se/1.5.0/docs/api/"/>
+					<link href="http://lucene.apache.org/java/2_3_2/api/core/" />
+				  </javadoc>
+	</target>
+	
+	<target name="test-build" depends="dist">
+		<javac destdir="${build.test}">
+            <src path="${test}"/>
+            <classpath refid="server.compile.class.path"/>
+        </javac>
+		<jar destfile="${dist}/${project.name}-${version}-test.jar"  basedir="${build.test}" />
+	</target>
+	
+	<target name="test" description="Runs JUnit Tests" depends="test-build">
+		<echo>=== Running JUnit Tests ===</echo>
+		
+		<junit printsummary="yes" fork="yes" haltonfailure="yes" showoutput="yes">
+
+		    <!-- classpath must include all jar dependencies and classes -->
+			<classpath refid="server.compile.class.path" />
+			
+	      	<!-- formatter to use for output -->
+        	<formatter type="plain"/>
+	        
+			<!-- fully qualified classname of testsuite -->
+			<test name="proj.zoie.test.ZoieTestSuite"/>
+		</junit>
+	</target>
+</project>

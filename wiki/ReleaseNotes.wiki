@@ -1,0 +1,78 @@
+#labels Featured
+=Release Notes=
+
+== 2.0.0-rc3 ==
+  * Issue 55 (John Wang)
+  * Issue 53 (John Wang)
+  * Issue 59 (John Wang)
+  * Issue 60 (John Wang)
+  * Fixed a boundary case race condition (Xiaoyang Gu)
+  * Added JDBC data provider
+  * numerous performance enhancements
+
+== 2.0.0-rc2 ==
+  * Issue 51 (Yasuhiro Matsuda)
+  * Other performance improvements (Yasuhiro Matsuda)
+
+== 2.0.0-rc1 ==
+  * Issue 44 (John Wang, Lucene upgrade)
+  * Issue 46 (Lei Wang)
+  * Issue 37 (John Wang)
+  * Issue 48 (John Wang)
+  * Memory improvements (Yasuhiro Matsuda & Xiaoyang Gu)
+  * Index snapshot support (Yasuhiro Matsuda)
+
+===API & Behavior Changes===
+Due to significant changes in Lucene 2.9.x, we had to make the following API and behavior changes as well.
+  * Indexable renamed to !ZoieIndexable, getUID() now returns a long, and buildDocuments changed to buildIndexingReqs.
+  * !IndexableInterpreter changed to !ZoieIndexableInterpreter to return !ZoieIndexable
+  * !IndexReaderDecorator has a new api: redecorate(), to correct implementation of this api is to just rewrap the inner indexReader, it is guaranteed the !ZoieIndexReader instance passed in contains inner segment that has not changed, merely reopened.
+  * !IndexReaderFactory has a new api: returnIndexReaders(), which is a clean up call must now be called after done with the readers. Do not call close() on the readers.
+  * !ZoieIndexReader can no longer be new'd, open() factory method is to be called instead.
+  * !ZoieSystem now instead returns a List of decorated readers, it now readers a List of !ZoieIndexReaders, and decorated readers can be obtained from !ZoieIndexReader.getDecoratedReaders(). 
+
+== 1.4.1 ==
+  * Issue 38 (Xiaoyang Gu)
+  * Issue 41 (Xiaoyang Gu)
+  * Fixed a intermittent problem where flushEvents may cause a hang. (only during testing)
+
+==1.4.0==
+  * Issue 36 (Yasuhiro Matsuda)
+  * Issue 34 (John Wang)
+  * Issue 30 (Yasuhiro Matsuda)
+  * Issue 27 (Yasuhiro Matsuda)
+  * Issue 25 (Yasuhiro Matsuda)
+  * Issue 29 (Yasuhiro Matsuda)
+  * Issue 39 (Yasuhiro Matsuda)
+  * some performance improvements (ram-to-disk index segment copy, !ZoieMergePolicy new segment merge policy)
+
+==1.3.1==
+  * Core bug fixes (Issue 31, Issue 32) 
+==1.3.0==
+  * Optimize scheduling enhancement
+  * Core bug fixes (Issue 24, Issue 26)
+  * A fix for the example application (Issue 25)
+==1.2.5==
+  * Numerous core bug fixes (Yasuhiro Matsuda)
+  * Performance enhancements (Yasuhiro Matsuda)
+  * Issue 15: jmx control to see batch count (Yasuhiro Matsuda)
+  * Issue 12: auto disable memory/realtime indexing when index load is very high (Yasuhiro Matsuda)
+
+==1.2.0==
+
+  * Numerous core bug fixes (Yasuhiro Matsuda)
+  * Added more realtime test cases (Yasuhiro Matsuda)
+  * Fixed jmx issue (John Wang)
+  * Cleaned up the example war (John Wang)
+  * Repackage and build file clean up (John Wang)
+
+==1.1.0==
+
+  * Lucene 2.4 upgrade (John Wang)
+  * Issue 7: Clean up threading in !StreamDataProvider and !MemoryDataProvider (Yasuhiro Matsuda)
+  * Issue 8: Add an addEvent method to !MemoryStreamSourceDataProvider (Yasuhiro Matsuda)
+  * Issue 10: Batch up documents when data incoming rate is faster than real time indexing rate (Yasuhiro Matsuda)
+
+==1.0.0==
+
+Initial Release

@@ -1,0 +1,32 @@
+<!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/gwt/DTD/xhtml.ent">
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder" xmlns:g='urn:import:com.google.gwt.user.client.ui'>
+  <g:HTMLPanel ui:field='topPanel'>
+    
+    <g:VerticalPanel addStyleNames="overviewVertical">
+      <g:HorizontalSplitPanel addStyleNames="overviewSplit">
+        <g:VerticalPanel addStyleNames="overviewVertical">
+          <g:FlowPanel ui:field='memchartPanel'/>
+          <g:FlowPanel ui:field='cpuchartPanel'/>
+        </g:VerticalPanel>      
+       <g:HTMLPanel>   
+         <dl class="jmxDefinitionList">
+           <dt>Server:</dt>
+           <dd><g:Label ui:field='serverLabel' /></dd>
+           
+           <dt>Platform:</dt>
+           <dd><g:Label ui:field='platformLabel'/></dd>
+           
+           <dt>Available CPUs:</dt>
+           <dd><g:Label ui:field='availCPULabel'/></dd>
+           
+           <dt>Zoie:</dt>
+           <dd><g:FlexTable ui:field='infoTable' addStyleNames="flexTable"/></dd>
+           
+           <dt>Data Provider</dt>
+           <dd><g:FlexTable ui:field='dataProviderTable' addStyleNames="flexTable"/></dd>
+         </dl>      
+       </g:HTMLPanel>
+     </g:HorizontalSplitPanel>
+    </g:VerticalPanel> 
+  </g:HTMLPanel>
+</ui:UiBinder>

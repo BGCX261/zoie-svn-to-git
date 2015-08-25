@@ -1,0 +1,225 @@
+#summary Code Samples
+#labels Featured,Phase-Implementation
+
+<wiki:toc max_depth="5" />
+
+= Introduction =
+
+This wiki contains a set of code samples to get your started.
+
+== Basic Objects ==
+
+===My data definition:===
+
+{{{
+class Data{
+  long id;
+  String content;
+}
+}}}
+
+===Define a *!ZoieIndexableInterpreter*:===
+
+A !ZoieIndexableInterpreter is a way to convert a data object into a Lucene document:
+
+{{{
+class DataIndexable implements ZoieIndexable {
+    private Data _data;
+    public DataIndexable(Data data) {
+        _data = data;
+    }
+
+    public long getUID() {
+        return _data.id;
+    }
+
+    public IndexingReq[] buildIndexingReqs() {
+        // it is possible we want to map 1 data object to multiple lucene documents
+        // but not for this example
+        Document doc = new Document();
+        doc.add(new Field("content",_data.content,Store.NO,Index.ANALYZED));
+
+        // no need to add the id field, Zoie will manage the id for you
+        return new IndexingReq[]{new IndexingReq(doc)};
+    }
+
+    // the following methods in this example are kind of hacky,
+    // but it is designed to be used when information needed to determine whether documents are to be deleted and/or skipped
+    // are only known at runtime
+
+    public boolean isDeleted() {
+        return "_MARKED_FOR_DELETE".equals(_data.content);
+    }
+
+    public boolean isSkip(){
+        return "_MARKED_FOR_SKIP".equals(_data.content);
+    }
+}
+
+class DataIndexableInterpreter implements ZoieIndexableInterpreter<Data> {
+    public ZoieIndexable interpret(Data src){
+        return new DataIndexable(src);
+    }
+}
+
+}}}
+
+=== Build an !IndexDecorator ===
+
+An !IndexDecorator is a way for clients to decorate a given !ZoieIndexReader to a custom !IndexReader type, e.g. !FilterIndexReader class in Lucene.
+
+This is not mandatory, client for most cases can just use the returned !ZoieIndexReader.
+
+{{{
+class MyDoNothingFilterIndexReader extends FilterIndexReader {
+    public MyDoNothingFilterIndexReader(IndexReader reader) {
+        super(reader);       
+    }
+    public void updateInnerReader(IndexReader inner) {
+        in = inner;
+    }
+}
+
+class MyDoNothingIndexReaderDecorator implements IndexReaderDecorator<MyDoNothingFilterIndexReader> {
+    public MyDoNothingIndexReaderDecorator decorate(ZoieIndexReader indexReader) throws IOException {
+        return new MyDoNothingFilterIndexReader(indexReader);
+    }
+      public MyDoNothingIndexReaderDecorator redecorate(MyDoNothingIndexReaderDecorator decorated,ZoieIndexReader copy) throws IOException {
+        // underlying segment has not changed, just change the inner reader
+
+        decorated.updateInnerReader(copy);
+        return decorated;
+    }
+}
+}}}
+
+===Build a !ZoieSystem===
+
+We are now ready to build a !ZoieSystem instance:
+
+{{{
+
+// index directory
+File idxDir = new File("myIdxDir");
+
+// create an analyzer
+Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
+
+// create similarity
+Similarity similarity = new DefaultSimilarity();
+
+ZoieIndexableInterpreter<Data> myInterpreter = new DataIndexableInterpreter();
+
+IndexReaderDecorator<MyDoNothingFilterIndexReader> decorator = new MyDoNothingIndexReaderDecorator();
+
+ZoieSystem indexingSystem = new ZoieSystem(idxDir,                     // index direcotry
+                                                                                    myInterpreter,        // my interpreter
+                                                                                    decorator,                         // index decorator
+                                                                                    analyzer,                 // my analyzer
+                                                                                    similarity,               // my similarity
+                                                                                    1000,                      // # events to hold in mem before flushing to disk
+                                                                                    300000,                  // time(ms) to wait before flushing to disk
+                                                                                    true);                       // true for realtime
+
+indexingSystem.start();     // ready to accept indexing events
+
+}}}
+
+== Basic Search ==
+
+This example shows how to set up basic indexing and search
+
+thread 1: (indexing thread)
+{{{
+
+long batchVersion = 0;
+while(true){
+     Data[] data = buildDataEvents(...);       // build a batch of data object to index
+
+      // construct a collection of indexing events
+      ArrayList<DataEvent> eventList = new ArrayList<DataEvent>(data.length);
+      for (Data datum : data){
+         eventList.add(new DataEvent<Data>(batchVersion,datum));
+      }
+
+      // do indexing
+      indexingSystem.consume(events);
+
+      // increment my version
+      batchVersion++;
+}
+
+}}}
+
+thread 2: (search thread)
+
+{{{
+
+  // get the IndexReaders
+  List<ZoieIndexReader<MyDoNothingFilterIndexReader>> readerList = indexingSystem.getIndexReaders();
+
+  // MyDoNothingFilterIndexReader instances can be obtained by calling
+  // ZoieIndexReader.getDecoratedReaders()
+
+  // combine the readers
+  MultiReader reader = new MultiReader(readerList.toArray(new IndexReader[readerList.size()]),false);  
+
+  // do search
+  IndexSearcher searcher = new IndexSearcher(reader);
+ 
+  Query q = buildQuery("myquery",indexingSystem.getAnalyzer());
+
+   TopDocs docs = searcher.search(q,10);
+
+   // return readers
+   indexingSystem.returnIndexReaders(readerList);
+}}}
+
+==UID/docid mapping==
+{{{
+// given a ZoieIndexReader instance:
+    ZoieIndexReader zreader = ...
+}}}
+===docid to uid===
+
+{{{
+    long uid = zreader.getUID(docid);
+
+    // make sure uid is not deleted in this reader:
+
+    if (uid==ZoieIndexReader.DELETED_UID)
+        throw new ZoieException("uid deleted");
+}}}
+
+===uid to docid===
+{{{
+    DocIDMapper docidMapper = zreader.getDocIDMapper();
+    int docid = docidMapper.getDocID(uid);
+
+    if (docid==DocIDMapper.NOT_FOUND)
+        throw new ZoieException("uid does not exist");
+}}}
+
+==Data Providers==
+
+Data providers can be many things, e.g.:
+  * RDBMS streamer
+  * Crawler
+
+Zoie comes out of the box with some useful data providers.
+
+===!StreamDataProvider===
+
+This is the top level abstraction for stream based data providers. See  [http://test.project-voldemort.com:8080/job/zoie%20trunk/javadoc/proj/zoie/impl/indexing/StreamDataProvider.html StreamDataProvider javadoc].
+
+To write an implementation, simply override the *next()* method and return null to indicate end of the stream.
+
+All !StreamDataProvider instances can be managed by the JMX mbean: [http://test.project-voldemort.com:8080/job/zoie%20trunk/javadoc/proj/zoie/mbean/DataProviderAdminMBean.html DataProviderAdminMBean]
+
+====!MemoryStreamDataProvider====
+
+A very simple stream data provider that constructs from a list of events and iterates through them. The Zoie unit tests are built from it. See [http://test.project-voldemort.com:8080/job/zoie%20trunk/javadoc/proj/zoie/impl/indexing/MemoryStreamDataProvider.html javadoc].
+
+====!FileDataProvider====
+
+This stream data provider takes a java File object and recursive iterates all files within it (if it is a directory). It is constructed with simply a File instance. See [http://test.project-voldemort.com:8080/job/zoie%20trunk/javadoc/proj/zoie/impl/indexing/FileDataProvider.html javadoc].

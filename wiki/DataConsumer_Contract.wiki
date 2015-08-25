@@ -1,0 +1,9 @@
+October 13, 2009
+
+We are strengthening the contract for the following method in {{{DataConsumer}}} interface:
+
+{{{void consume(Collection<DataEvent<V>> data) throws ZoieException;}}}
+
+We will assume that the incoming DataEvent collections contains DataEvents whose versions are properly ordered when the collections are enumerated. Also care should be taken by the client code that if consume is invoked on collection1 before on collection2, then all the max version number for events in collection1 must be smaller than the min version number for events in collection2.
+
+This change will take effect in the upcoming release.

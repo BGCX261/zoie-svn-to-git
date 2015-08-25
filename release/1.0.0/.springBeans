@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beansProjectDescription>
+	<version>1</version>
+	<pluginVersion><![CDATA[2.0.5.v200805211800]]></pluginVersion>
+	<configSuffixes>
+		<configSuffix><![CDATA[xml]]></configSuffix>
+		<configSuffix><![CDATA[spring]]></configSuffix>
+	</configSuffixes>
+	<enableImports><![CDATA[false]]></enableImports>
+	<configs>
+		<config>server/conf/dataprovider.spring</config>
+		<config>server/conf/jmx.spring</config>
+		<config>server/conf/applicationContext.spring</config>
+		<config>server/conf/zoie.spring</config>
+	</configs>
+	<configSets>
+		<configSet>
+			<name><![CDATA[zoie-spring]]></name>
+			<allowBeanDefinitionOverriding>true</allowBeanDefinitionOverriding>
+			<incomplete>false</incomplete>
+			<configs>
+				<config>server/conf/dataprovider.spring</config>
+				<config>server/conf/jmx.spring</config>
+				<config>server/conf/applicationContext.spring</config>
+				<config>server/conf/zoie.spring</config>
+			</configs>
+		</configSet>
+	</configSets>
+</beansProjectDescription>

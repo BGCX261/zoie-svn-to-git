@@ -1,0 +1,179 @@
+<project name="zoie" default="dist">
+	<property name="src" value="java"/>
+	<property name="server.resource" value="server/resource" />
+	<property name="server.src" value="server/src" />
+	<property name="server.conf" value="server/conf" />
+	<property name="jetty.home" value="jetty" />
+	<property name="jetty.temp" value="jetty-temp" />
+		
+	<property name="test" value="test"/>
+    <property name="lib" value="lib"/>
+    
+	<property name="build" value="build"/>
+    <property name="build.server" value="build-server"/>
+	
+	<property name="settings" value="settings"/>
+		
+	
+	<property name="logs" value="logs"/>
+	
+	<property name="dist" value="dist" />
+	<property name="version" value="1.0.0"/>
+	<property name="doc" value="doc"/>
+	<property name="build.test" value="build-test"/>
+	<property name="project.name" value="zoie"/>
+	
+	<path id="compile.class.path">
+		<fileset dir="${lib}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+	
+	<path id="java.class.path">
+		<dirset dir="${build}">
+		        <include name="**"/>
+		</dirset>
+		
+	</path>
+	
+	<path id="test.class.path">
+			<dirset dir="${build.test}">
+			        <include name="**"/>
+			</dirset>
+		</path>
+	
+	<target name="clean">
+        <delete dir="${build}"/>
+        <delete dir="${dist}"/>
+		<delete dir="${build.server}"/>
+		<delete dir="${build.test}"/>
+		<delete dir="${jetty.temp}"/>
+    </target>
+
+    <target name="init">
+        <mkdir dir="${build}"/>
+        <mkdir dir="${dist}"/>
+    	<mkdir dir="${build.server}"/>
+    	<mkdir dir="${build.test}"/>
+    </target>
+	
+	<target name="compile" depends="init">
+		<javac destdir="${build}">
+            <src path="${src}"/>
+            <classpath refid="compile.class.path"/>
+        </javac>
+	</target>
+	
+	<target name="dist" depends="compile">
+			<jar destfile="${dist}/${project.name}-${version}.jar"  basedir="${build}" />
+	</target>
+	
+	<path id="server.compile.class.path">
+			<fileset dir="${lib}">
+				<include name="*.jar" />
+			</fileset>
+			<fileset dir="${dist}">
+				<include name="*.jar" />
+			</fileset>
+	</path>
+	
+	<path id="server.run.class.path">
+				<fileset dir="${jetty.home}">
+					<include name="*.jar" />
+				</fileset>
+		        <fileset dir="${lib}">
+					<include name="*.jar" />
+				</fileset>
+	</path>
+	
+	<target name="build-server" depends="dist">
+		<javac destdir="${build.server}">
+		       <src path="${server.src}"/>
+		       <classpath refid="server.compile.class.path"/>
+		</javac>
+	</target>
+	
+	<target name="war" depends="build-server">
+		<war destfile="${dist}/${project.name}.war" webxml="${server.resource}/web.xml" >
+			<fileset dir="server/webapp"/>
+			<classes dir="${build.server}"/>
+			<classes dir="${server.conf}"/>
+			<classes dir="${settings}"/>
+			<webinf dir="${server.resource}" />
+            <lib dir="${lib}" />
+			<lib dir="${dist}">
+				<include name="${project.name}-${version}.jar"/>
+			</lib>
+		</war>
+	</target>
+	
+	<path id="jetty.plugin.classpath">
+	  <fileset dir="${jetty.home}" includes="*.jar"/>
+	</path>
+	
+	<taskdef classpathref="jetty.plugin.classpath" resource="tasks.properties" loaderref="jetty.loader" />
+
+	<target name="run-server" depends="war">
+	    <jetty tempDirectory="${jetty.temp}">
+	      <systemProperties>
+	      	<systemProperty name="java.naming.factory.initial" value="org.mortbay.naming.InitialContextFactory" />
+	      	<systemProperty name="log.home" value="${logs}" />
+	      </systemProperties>
+	      <webApp name="zoie" warfile="${dist}/zoie.war" contextpath="/zoie" />
+	    </jetty>
+	</target>
+
+	<!--
+	<target name="run-server" depends="build-server">
+		<java fork="true" classname="proj.zoie.server.ZoieServer" classpathref="server.run.class.path" 
+			failonerror="true" maxmemory="100m">
+			<sysproperty key="log.home" value="${logs}" />
+			<jvmarg value="-Dcom.sun.management.jmxremote" />
+		</java>
+	</target>
+	-->
+	
+	<target name="javadoc" depends="init">
+
+        <delete dir="${doc}"/>
+		<javadoc packagenames="proj.zoie.api,
+							   proj.zoie.api.indexing,
+							   proj.zoie.imp.indexing"
+				           sourcepath="${src}"
+						   classpathref="compile.class.path"
+				           defaultexcludes="yes"
+				           destdir="${doc}"
+				           author="true"
+				           version="true"
+				           use="true"
+				           windowtitle="zoie">
+				    <doctitle><![CDATA[<h1>Zoie</h1>]]></doctitle>
+				    <link href="http://java.sun.com/j2se/1.5.0/docs/api/"/>
+					<link href="http://lucene.apache.org/java/2_3_2/api/core/" />
+				  </javadoc>
+	</target>
+	
+	<target name="test-build" depends="dist">
+		<javac destdir="${build.test}">
+            <src path="${test}"/>
+            <classpath refid="server.compile.class.path"/>
+        </javac>
+		<jar destfile="${dist}/${project.name}-${version}-test.jar"  basedir="${build.test}" />
+	</target>
+	
+	<target name="test" description="Runs JUnit Tests" depends="test-build">
+		<echo>=== Running JUnit Tests ===</echo>
+		
+		<junit printsummary="yes" fork="yes" haltonfailure="yes" showoutput="yes">
+
+		    <!-- classpath must include all jar dependencies and classes -->
+			<classpath refid="server.compile.class.path" />
+			
+	      	<!-- formatter to use for output -->
+        	<formatter type="plain"/>
+	        
+			<!-- fully qualified classname of testsuite -->
+			<test name="proj.zoie.test.ZoieTestSuite"/>
+		</junit>
+	</target>
+</project>

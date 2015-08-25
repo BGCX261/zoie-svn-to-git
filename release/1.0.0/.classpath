@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="java"/>
+	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="src" path="server/src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/servlet-api-2.5-6.1.11.jar"/>
+	<classpathentry kind="lib" path="lib/mx4j.jar"/>
+	<classpathentry kind="lib" path="lib/mx4j-tools.jar"/>
+	<classpathentry kind="lib" path="lib/spring.jar"/>
+	<classpathentry kind="lib" path="lib/fastutil-5.1.5.jar"/>
+	<classpathentry kind="lib" path="lib/json.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-core-2.3.2.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-highlighter-2.3.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
+	<classpathentry kind="output" path="output"/>
+</classpath>

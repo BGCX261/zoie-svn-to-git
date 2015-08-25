@@ -1,0 +1,37 @@
+#labels Featured,Phase-Implementation
+=!ZoieMergePolicy=
+
+==Introduction==
+
+Zoie uses a customized merge policy implementation. This merge policy is designed to improve realtime indexing performance by carefully managing the number of segments and their sizes.
+
+==Details==
+
+===Issues with Segment Merge===
+Lucene creates small index segments when new documents are indexed. Lucene merges small segments to a larger segments. !MergePolicy decides when to do it. Lucene has two implemetations of [http://lucene.apache.org/java/2_4_1/api/core/org/apache/lucene/index/MergePolicy.html MergePolicy]: [http://lucene.apache.org/java/2_4_1/api/core/org/apache/lucene/index/LogByteSizeMergePolicy.html LogByteSizeMergePolicy] and [http://lucene.apache.org/java/2_4_1/api/core/org/apache/lucene/index/LogDocMergePolicy.html LogDocMergePolicy]. They try to merge segments into levels of exponentially increasing size in byte and the number of documents, respectively. 
+
+This works nicely in off-line indexing environment. However, in a realtime indexing environment, there are some problems:
+  * A merge takes longer as the segment size gets bigger. The larger the segment, the less frequently segments are merged, but when it happens a big merge impacts CPU and I/O and hurts search/indexing performance.
+  * It takes long time to clean up index data of deleted documents in large segments. Deletes are removed from index as a result of merge.
+
+In a realtime environment it is better to have more frequent smaller merges than one big merge. But we need to keep the number of segments under control to maintain a good search performance. !ZoieMergePolicy is created to address this requirement. Note that !LogMergePolicy has a method to suppress merges of segments bigger than a certain size. But it is required to set up several parameters carefully to get desired behavior.
+
+===Large Segments vs Small Segments===
+
+!ZoieMergePolicy has a concept of large segments and small segments. The number of segments are controlled by !NumLargeSegments (L) and !MaxSmallSegments (S). Zoie try to keep the size of first L segments close and also to keep the number of small segments at most S. Small segments are managed in the same way as !LogByteSizeMergePolicy. When the total size of the small segments reaches the average size of large segments, small segments are promoted to a large segment. !ZoieMergePolicy finds the most balanced way of merging segments using [http://en.wikipedia.org/wiki/Viterbi_algorithm Viterbi algorithm]. 
+
+===Segment Size Normalization===
+
+The segment size is measured by the total byte size of the files that constitutes the segment. It includes index data of deleted documents. In an extreme case, it is possible that a large segment does not have any valid document. Such a segment may not be selected for a merge simply because it is large if the selection is solely based on the size. Thus, !ZoieMergePolicy normalizes the size by the ratio of deleted documents. Zoie can estimate a segment size for merge more accurately.
+
+===Partial Expunge===
+
+Although the balanced merge described above increases the change of deletes being purged, an application may want to do it more often for search performance. !ZoieMergePolicy allows an application to set  the !PartialExpunge flag. It finds one segment with most deletes and cleans it up in addition to a regular merge. !PartialExpunge can be done on a schedule, it is recommended to use this flag when load is light, for example, every day at 1:00am. 
+
+===Performance===
+
+The following chart shows the benefit of !ZoieMergePolicy. We measured the query response time during indexing. Zoie indexed 154MB of data (about 16000 documents, replicated up to 1M documents), then it randomly chose documents to update for 10 hours. !LogMergePolicy suffered a huge performance hit toward the end. On the other hand, !ZoieMergePolicy is relatively stable though there are small but more frequent spikes.
+
+[http://files.me.com/yasuhiro.matsuda/2smgts?type.png]
+
+!ZoieMergePolicy tends to reclaim deleted documents more often compared to !LogMergePolicy. This helps the base line of query response time. The response time is 10~20% faster with !ZoieMergePolicy.
